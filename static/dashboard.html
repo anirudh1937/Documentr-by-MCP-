@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MCP Document Editor — Live Backend Activity Dashboard">
+    <title>Dashboard — MCP Document Editor</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2306b6d4'/><text x='50%25' y='55%25' text-anchor='middle' dominant-baseline='central' font-size='55'>⚡</text></svg>">
+
+    <!-- Preconnect for Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- ═══ Header ═══ -->
+        <header class="dash-header">
+            <div class="dash-logo">
+                <div class="icon">⚡</div>
+                <div>
+                    <h1>Backend Dashboard</h1>
+                    <span class="subtitle">MCP Document Editor</span>
+                </div>
+            </div>
+            <span class="header-spacer"></span>
+            <div class="header-status">
+                <div class="status-chip online" id="server-status">
+                    <span class="dot"></span>
+                    <span>Server Online</span>
+                </div>
+                <div class="status-chip mcp">
+                    <span>🤖</span>
+                    <span id="mcp-badge">MCP Ready</span>
+                </div>
+                <div class="header-clock" id="header-clock">00:00:00</div>
+                <a href="/" class="btn-editor-link" aria-label="Open Editor">← Open Editor</a>
+            </div>
+        </header>
+
+        <!-- ═══ Body ═══ -->
+        <div class="dash-body">
+            <!-- Stats Row -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-label">Uptime</div>
+                    <div class="stat-value" id="stat-uptime">0s</div>
+                    <div class="stat-detail" id="stat-started">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Requests</div>
+                    <div class="stat-value" id="stat-requests">0</div>
+                    <div class="stat-detail" id="stat-rps">0 req/s</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Documents</div>
+                    <div class="stat-value" id="stat-documents">0</div>
+                    <div class="stat-detail">on disk</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">WS Connections</div>
+                    <div class="stat-value" id="stat-ws">0</div>
+                    <div class="stat-detail" id="stat-ws-detail">0 documents</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Errors</div>
+                    <div class="stat-value" id="stat-errors">0</div>
+                    <div class="stat-detail" id="stat-error-rate">0%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg Response</div>
+                    <div class="stat-value" id="stat-latency">0ms</div>
+                    <div class="stat-detail">last 50 requests</div>
+                </div>
+            </div>
+
+            <!-- Left: Server Info -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span>🖥️</span>
+                    <h2>Server Info</h2>
+                </div>
+                <div class="panel-body">
+                    <div class="info-grid" id="server-info">
+                        <div class="info-row">
+                            <span class="info-icon">🤖</span>
+                            <div class="info-content">
+                                <div class="info-label">MCP Server</div>
+                                <div class="info-value accent" id="info-server-name">DocumentEditor</div>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">🔌</span>
+                            <div class="info-content">
+                                <div class="info-label">Transport</div>
+                                <div class="info-value mono cyan" id="info-transport">stdio + streamable-http</div>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">📡</span>
+                            <div class="info-content">
+                                <div class="info-label">API Server</div>
+                                <div class="info-value mono emerald" id="info-api">FastAPI + Uvicorn</div>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">🐍</span>
+                            <div class="info-content">
+                                <div class="info-label">Runtime</div>
+                                <div class="info-value mono" id="info-runtime">Python 3.x</div>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">💾</span>
+                            <div class="info-content">
+                                <div class="info-label">Storage</div>
+                                <div class="info-value mono amber" id="info-storage">JSON / disk</div>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">🌐</span>
+                            <div class="info-content">
+                                <div class="info-label">Host</div>
+                                <div class="info-value mono" id="info-host">--</div>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">🧠</span>
+                            <div class="info-content">
+                                <div class="info-label">Memory Usage</div>
+                                <div class="info-value mono violet" id="info-memory">--</div>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">🔧</span>
+                            <div class="info-content">
+                                <div class="info-label">MCP Tools (11)</div>
+                                <div class="tools-list" id="tools-list">
+                                    <span class="tool-tag">create_document</span>
+                                    <span class="tool-tag">read_document</span>
+                                    <span class="tool-tag">update_document</span>
+                                    <span class="tool-tag">delete_document</span>
+                                    <span class="tool-tag">list_documents</span>
+                                    <span class="tool-tag">search_documents</span>
+                                    <span class="tool-tag">search_and_replace</span>
+                                    <span class="tool-tag">get_version_history</span>
+                                    <span class="tool-tag">restore_version</span>
+                                    <span class="tool-tag">export_document</span>
+                                    <span class="tool-tag">open_editor</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">📦</span>
+                            <div class="info-content">
+                                <div class="info-label">MCP Resources (3)</div>
+                                <div class="tools-list">
+                                    <span class="tool-tag">doc://{id}</span>
+                                    <span class="tool-tag">doc://{id}/versions</span>
+                                    <span class="tool-tag">docs://list</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center: Live Activity Log -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span>📊</span>
+                    <h2>Live Activity</h2>
+                    <span class="panel-badge log-badge" id="log-count">0 events</span>
+                    <button class="btn-clear" id="btn-clear-log" aria-label="Clear activity log">Clear</button>
+                </div>
+                <div class="panel-body" id="activity-log">
+                    <div class="log-empty" id="log-empty">
+                        <div class="icon">📡</div>
+                        <p>Waiting for activity…</p>
+                        <p style="font-size:11px;">Events will appear here in real-time</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Active Connections -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span>🔗</span>
+                    <h2>Active Connections</h2>
+                    <span class="panel-badge conn-badge" id="conn-count">0</span>
+                </div>
+                <div class="panel-body" id="connections-list">
+                    <div class="conn-empty" id="conn-empty">
+                        <span style="font-size:28px;opacity:0.4;">🔌</span>
+                        <span>No active WebSocket connections</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Disconnected Banner -->
+        <div class="disconnect-banner" id="disconnect-banner">
+            <span>⚠️ Dashboard disconnected from server. Attempting to reconnect…</span>
+        </div>
+
+        <!-- ═══ Footer ═══ -->
+        <footer class="dash-footer">
+            <div class="footer-item">
+                <span class="footer-dot green"></span>
+                <span>Dashboard WS: <span id="footer-ws-status">Connected</span></span>
+            </div>
+            <div class="footer-item">
+                <span>Port: <strong id="footer-port">8765</strong></span>
+            </div>
+            <div class="footer-item">
+                <span>PID: <strong id="footer-pid">--</strong></span>
+            </div>
+            <span class="footer-spacer"></span>
+            <div class="footer-item">
+                <span>MCP Document Editor v1.0.0</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // If embedded inside the HUD, make transparent and hide unnecessary UI
+        if (window.location.search.includes('embed=1')) {
+            document.body.style.background = 'transparent';
+            document.querySelector('.dashboard').style.background = 'transparent';
+            document.querySelector('.dash-header').style.display = 'none';
+            document.querySelector('.dash-footer').style.display = 'none';
+            // Adjust body padding to look better in the HUD
+            document.querySelector('.dash-body').style.padding = '10px';
+        }
+    </script>
+    <script src="/static/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+[project]
+name = "mcp-document-editor"
+version = "1.0.0"
+description = "A collaborative document editor exposed as an MCP server with a rich web-based frontend"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]>=1.0.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "websockets>=12.0",
+    "markdown>=3.6",
+    "python-multipart>=0.0.9",
+    "markdownify>=0.13.1",
+    "langchain>=0.2.0",
+    "langchain-community>=0.2.0",
+    "langchain-openai",
+    "langchain-google-genai",
+    "langchain-anthropic",
+]
+
+[project.optional-dependencies]
+monitoring = ["psutil>=5.9.0"]
+
+[project.scripts]
+mcp-doc-editor = "main:main"
+
+[project.urls]
+Homepage = "https://github.com/your-username/mcp-document-editor"
+Documentation = "https://github.com/your-username/mcp-document-editor#readme"
+Issues = "https://github.com/your-username/mcp-document-editor/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]

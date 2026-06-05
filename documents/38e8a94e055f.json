@@ -1,0 +1,21 @@
+{
+  "id": "38e8a94e055f",
+  "title": "Untitled DocumentTest Doc from Swagger",
+  "content": "Hello World",
+  "created_at": "2026-06-04T12:43:55.933732Z",
+  "updated_at": "2026-06-04T12:43:55.933732Z",
+  "tags": [],
+  "pinned": false,
+  "is_draft": false,
+  "draft_of": null,
+  "versions": [
+    {
+      "version_id": "12cd9179e276",
+      "content": "Hello World",
+      "title": "Untitled DocumentTest Doc from Swagger",
+      "timestamp": "2026-06-04T12:43:55.937087Z",
+      "summary": "Initial creation"
+    }
+  ],
+  "max_versions": 50
+}

@@ -1,0 +1,22 @@
+{
+  "id": "5a71e5f6dd4a",
+  "title": "AI Test Document",
+  "content": "<h1>Hello from the AI!</h1><p>I just created this document using the MCP protocol.</p>",
+  "created_at": "2026-06-03T20:05:49.734323Z",
+  "updated_at": "2026-06-03T20:05:49.734323Z",
+  "tags": [
+    "test",
+    "ai",
+    "mcp"
+  ],
+  "versions": [
+    {
+      "version_id": "4df9ff2f611a",
+      "content": "<h1>Hello from the AI!</h1><p>I just created this document using the MCP protocol.</p>",
+      "title": "AI Test Document",
+      "timestamp": "2026-06-03T20:05:49.734323Z",
+      "summary": "Initial creation"
+    }
+  ],
+  "max_versions": 50
+}
