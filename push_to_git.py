@@ -14,8 +14,8 @@ def run_cmd(cmd):
 
 def main():
     print("=" * 45)
-    print("         📝 MCP Tool Git Push Helper")
-    print("=" * 45)
+    print("         MCP Tool Git Push Helper")
+    print("=============================================")
     
     # Check git
     success, _, _ = run_cmd(["git", "--version"])
@@ -69,9 +69,9 @@ def main():
         success, _, _ = run_cmd(["git", "push", "-f", "origin", "main"])
         
     if success:
-        print("\n🎉 Successfully pushed all files to GitHub repository!")
+        print("\n[SUCCESS] Successfully pushed all files to GitHub repository!")
     else:
-        print("\n❌ Push failed. Please verify repository existence, write access permissions, or run:")
+        print("\n[ERROR] Push failed. Please verify repository existence, write access permissions, or run:")
         print("   git push -u origin main")
 
 if __name__ == "__main__":
