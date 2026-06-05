@@ -7,7 +7,7 @@
     <title>MCP Document Editor</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%25' y='55%25' text-anchor='middle' dominant-baseline='central' font-size='55'>📝</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234f46e5'/><text x='50%25' y='55%25' text-anchor='middle' dominant-baseline='central' font-size='55'>📝</text></svg>">
 
     <!-- Preconnect for Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,204 +34,412 @@
 </head>
 <body>
     <div id="app">
-        <!-- ═══ Mobile Sidebar Toggle ═══ -->
-        <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle sidebar menu">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        </button>
-
-        <!-- ═══ Sidebar ═══ -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-logo">
-                    <div class="logo-icon">📝</div>
-                    <div>
-                        <h1>DocEditor</h1>
-                    </div>
-                    <span class="badge">MCP</span>
-                </div>
-                <div class="search-wrapper">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" id="sidebar-search" placeholder="Search documents…" autocomplete="off" aria-label="Search documents">
-                </div>
-                <button class="btn-new-doc" id="btn-new-doc" aria-label="Create new document">
-                    <span>＋</span>
-                    New Document
-                </button>
+        <!-- ═══ 1. GLOBAL SIDEBAR (Thin left menu matching reference) ═══ -->
+        <aside class="global-sidebar">
+            <div class="sidebar-logo-container">
+                <svg width="28" height="28" viewBox="0 0 100 100" class="global-logo">
+                    <rect width="100" height="100" rx="22" fill="#4f46e5"/>
+                    <text x="50%" y="55%" text-anchor="middle" dominant-baseline="central" font-size="52" fill="#ffffff" font-family="sans-serif" font-weight="bold">D</text>
+                </svg>
             </div>
-            <div class="doc-list" id="doc-list">
-                <div class="doc-list-loading" id="doc-list-loading">
-                    <div class="skeleton-item"></div>
-                    <div class="skeleton-item"></div>
-                    <div class="skeleton-item"></div>
-                </div>
-                <div class="doc-list-empty" id="doc-list-empty" style="display:none;">
-                    <div class="empty-icon">📄</div>
-                    <p>No documents yet.<br>Click "New Document" to get started!</p>
-                </div>
+            <nav class="global-nav">
+                <button class="nav-item active" id="nav-dashboard" title="Dashboard Workspace">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-item" id="nav-library" title="Document Editor">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span>Editor</span>
+                </button>
+                <button class="nav-item" id="nav-graph" title="Brain Mapping (Graph View)">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="19" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="5" cy="5" r="3"/><circle cx="19" cy="19" r="3"/><line x1="16.5" y1="7.5" x2="14" y2="10"/><line x1="7.5" y1="16.5" x2="10" y2="14"/><line x1="7.5" y1="7.5" x2="10" y2="10"/><line x1="16.5" y1="16.5" x2="14" y2="14"/></svg>
+                    <span>Graph</span>
+                </button>
+                <button class="nav-item" id="nav-hud" title="Server HUD Monitor">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    <span>Server</span>
+                </button>
+                <button class="nav-item" id="nav-settings" title="AI Settings">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    <span>Settings</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-avatar" id="btn-user-profile">U</div>
             </div>
         </aside>
 
-        <!-- ═══ Main Area ═══ -->
-        <main class="main-area" id="main-area">
-            <!-- Welcome screen (no doc) -->
-            <div class="welcome-screen" id="welcome-screen">
-                <div class="welcome-icon">✨</div>
-                <h2>Welcome to MCP Document Editor</h2>
-                <p>Create, edit, and collaborate on rich documents. Connected to AI via the Model Context Protocol.</p>
-                <div class="welcome-shortcuts">
-                    <div class="shortcut-item">
-                        <span class="shortcut-key">Ctrl + N</span>
-                        <span>New document</span>
-                    </div>
-                    <div class="shortcut-item">
-                        <span class="shortcut-key">Ctrl + S</span>
-                        <span>Save document</span>
-                    </div>
-                    <div class="shortcut-item">
-                        <span class="shortcut-key">Ctrl + H</span>
-                        <span>Search & Replace</span>
-                    </div>
-                    <div class="shortcut-item">
-                        <span class="shortcut-key">Ctrl + M</span>
-                        <span>Toggle Markdown</span>
+        <!-- ═══ 2. APP MAIN WORKSPACE AREA ═══ -->
+        <div class="app-workspace">
+            <!-- 2.1 App Header Bar (Matching reference navigation) -->
+            <header class="app-header">
+                <div class="header-left">
+                    <div class="view-toggle-tabs">
+                        <button class="tab-pill active" id="tab-global-view">Global view</button>
+                        <button class="tab-pill" id="tab-workspace-view">Workspace view</button>
                     </div>
                 </div>
-            </div>
 
-            <!-- Editor (hidden until doc selected) -->
-            <div id="editor-container" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
-                <!-- Top Bar -->
-                <div class="top-bar">
-                    <input type="text" id="doc-title" value="Untitled Document" spellcheck="false" aria-label="Document title">
-
-                    <!-- Avatar Stack (Collaborative Presence) -->
-                    <div class="avatar-stack" id="avatar-stack">
-                        <!-- Populated by JS -->
-                    </div>
-                    <div class="typing-indicator" id="typing-indicator" style="display:none;">
+                <div class="header-center">
+                    <div class="avatar-stack" id="header-avatar-stack"></div>
+                    <div class="typing-indicator" id="header-typing-indicator" style="display:none;">
                         <span class="typing-dots"><span></span><span></span><span></span></span>
-                        <span id="typing-name">Someone</span> is typing…
+                        <span id="header-typing-name">Someone</span> is typing…
+                    </div>
+                </div>
+
+                <div class="header-right">
+                    <div class="workspace-select-wrapper">
+                        <select id="workspace-select" class="workspace-select">
+                            <option value="local">Workspace: Local</option>
+                            <option value="cloud" disabled>Workspace: Cloud (Pro)</option>
+                        </select>
+                    </div>
+                    <button class="btn-corp-ai" id="btn-corp-ai">
+                        <span class="corp-ai-icon">✨</span>
+                        <span>Corp AI</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- 2.2 App Content Views -->
+            <div class="views-container">
+                <!-- 2.2.1 PLAYGROUND DASHBOARD (GLOBAL VIEW) -->
+                <div class="view-pane active" id="dashboard-pane">
+                    <!-- KPI Metric Cards Row -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper kpi-docs-bg">📁</div>
+                            <div class="kpi-content">
+                                <span class="kpi-label">Documents Library</span>
+                                <div class="kpi-row-val">
+                                    <span class="kpi-value" id="kpi-docs-count">0</span>
+                                    <span class="kpi-trend positive">No change</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper kpi-reqs-bg">⚡</div>
+                            <div class="kpi-content">
+                                <span class="kpi-label">API Request Traffic</span>
+                                <div class="kpi-row-val">
+                                    <span class="kpi-value" id="kpi-reqs-count">0</span>
+                                    <span class="kpi-trend positive" id="kpi-reqs-speed">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper kpi-conns-bg">🔌</div>
+                            <div class="kpi-content">
+                                <span class="kpi-label">Active Collaborators</span>
+                                <div class="kpi-row-val">
+                                    <span class="kpi-value" id="kpi-conns-count">0</span>
+                                    <span class="kpi-trend positive">Active WS</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper kpi-health-bg">🛡️</div>
+                            <div class="kpi-content">
+                                <span class="kpi-label">System Performance</span>
+                                <div class="kpi-row-val">
+                                    <span class="kpi-value" id="kpi-health-uptime">--</span>
+                                    <span class="kpi-trend positive" id="kpi-health-latency">--</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="top-bar-actions">
-                        <button class="btn-icon" id="btn-markdown-toggle" title="Toggle Markdown Mode" aria-label="Toggle Markdown Mode">
-                            💻
-                            <span class="tooltip">Markdown Mode</span>
-                        </button>
-                        <button class="btn-icon" id="btn-search-replace" title="Search & Replace" aria-label="Search and Replace">
-                            🔍
-                            <span class="tooltip">Search & Replace</span>
-                        </button>
-                        <button class="btn-icon" id="btn-versions" title="Version History" aria-label="Version History">
-                            🕐
-                            <span class="tooltip">Version History</span>
-                        </button>
-                        <button class="btn-icon" id="btn-ai-assistant" title="AI Assistant" aria-label="AI Assistant">
-                            ✨
-                            <span class="tooltip">AI Assistant</span>
-                        </button>
-                        <button class="btn-icon" id="btn-graph-view" title="Graph View" aria-label="Graph View">
-                            🕸️
-                            <span class="tooltip">Graph View</span>
-                        </button>
-                        <button class="btn-icon" id="btn-toggle-hud" title="Backend Monitor" aria-label="Backend Monitor">
-                            📊
-                            <span class="tooltip">Monitor HUD</span>
-                        </button>
-                        <div style="position: relative;">
-                            <button class="btn-icon" id="btn-export" title="Export" aria-label="Export document">
-                                📥
-                                <span class="tooltip">Export</span>
-                            </button>
-                            <div class="dropdown" id="export-dropdown">
-                                <button class="dropdown-item" data-format="html" id="export-html">
-                                    🌐 Export as HTML
-                                </button>
-                                <button class="dropdown-item" data-format="md" id="export-md">
-                                    📄 Export as Markdown
-                                </button>
+                    <!-- Main Dashboard Grid Layout -->
+                    <div class="dashboard-grid">
+                        <!-- Left Column (Notes & Ingestion Playground) -->
+                        <div class="dash-col main-col">
+                            <!-- Documents Summary Card -->
+                            <div class="dash-card">
+                                <div class="card-header">
+                                    <h3>Documents Summary</h3>
+                                    <button class="btn-new-doc-dash" id="btn-new-doc-dash">＋ New Document</button>
+                                </div>
+                                <div class="card-body document-summary-body">
+                                    <div class="chart-container">
+                                        <div class="donut-chart-wrapper">
+                                            <svg viewBox="0 0 36 36" class="donut-chart">
+                                                <circle class="donut-ring" cx="18" cy="18" r="15.915" fill="transparent" stroke="#e2e8f0" stroke-width="3"></circle>
+                                                <circle class="donut-segment" id="donut-seg-pinned" cx="18" cy="18" r="15.915" fill="transparent" stroke="#4f46e5" stroke-width="3" stroke-dasharray="0 100" stroke-dashoffset="25"></circle>
+                                                <circle class="donut-segment" id="donut-seg-unpinned" cx="18" cy="18" r="15.915" fill="transparent" stroke="#10b981" stroke-width="3" stroke-dasharray="0 100" stroke-dashoffset="25"></circle>
+                                            </svg>
+                                            <div class="chart-center-text">
+                                                <span class="chart-big-number" id="dash-total-docs">0</span>
+                                                <span class="chart-label">Total Notes</span>
+                                            </div>
+                                        </div>
+                                        <div class="chart-legend-grid">
+                                            <div class="legend-row">
+                                                <span class="legend-dot-bullet bullet-pinned"></span>
+                                                <span class="legend-text">Pinned Notes</span>
+                                                <strong id="legend-count-pinned">0</strong>
+                                            </div>
+                                            <div class="legend-row">
+                                                <span class="legend-dot-bullet bullet-unpinned"></span>
+                                                <span class="legend-text">Standard Notes</span>
+                                                <strong id="legend-count-unpinned">0</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="dash-docs-list-wrapper">
+                                        <div class="dash-list-header">RECENT DOCUMENTS</div>
+                                        <div class="dash-list" id="dash-documents-list">
+                                            <!-- Populated Dynamically by JS -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Local System Files Playground (Local Scanner & Uploader) -->
+                            <div class="dash-card">
+                                <div class="card-header">
+                                    <h3>Local System Files Playground</h3>
+                                    <button class="btn-scan-files" id="btn-scan-files">🔄 Scan Workspace</button>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-description">Import text or Markdown notes from your local machine directly into the database playground.</p>
+                                    
+                                    <!-- Drag & Drop File Zone -->
+                                    <div class="file-drop-zone" id="file-drop-zone">
+                                        <input type="file" id="file-input-uploader" style="display:none;" accept=".txt,.md,.json">
+                                        <div class="drop-zone-content">
+                                            <span class="drop-zone-icon">📥</span>
+                                            <h4>Drag & Drop Files Here</h4>
+                                            <p>or click to browse your computer</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Scanned Files List -->
+                                    <div class="local-scanned-files-wrapper">
+                                        <div class="dash-list-header">LOCAL WORKSPACE FILES SCAN</div>
+                                        <div class="local-files-list" id="local-files-list">
+                                            <div class="empty-scan-state">
+                                                <span>📂</span> Click "Scan Workspace" to look for local .md/.txt files in the project.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column (Observability & Health) -->
+                        <div class="dash-col side-col">
+                            <!-- Workspace Health / Readability Score -->
+                            <div class="dash-card">
+                                <div class="card-header">
+                                    <h3>Workspace Health Score</h3>
+                                </div>
+                                <div class="card-body health-score-body">
+                                    <div class="health-gauge-wrapper">
+                                        <svg viewBox="0 0 36 36" class="health-gauge">
+                                            <circle cx="18" cy="18" r="16" fill="none" stroke="#f1f5f9" stroke-width="2.5"></circle>
+                                            <circle id="health-gauge-value" cx="18" cy="18" r="16" fill="none" stroke="url(#indigo-grad)" stroke-width="2.5" stroke-dasharray="0 100" stroke-linecap="round" transform="rotate(-90 18 18)"></circle>
+                                            <defs>
+                                                <linearGradient id="indigo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stop-color="#4f46e5" />
+                                                    <stop offset="100%" stop-color="#06b6d4" />
+                                                </linearGradient>
+                                            </defs>
+                                        </svg>
+                                        <div class="gauge-center-text">
+                                            <span class="gauge-big-number" id="gauge-score">0</span>
+                                            <span class="gauge-label">/100</span>
+                                        </div>
+                                    </div>
+                                    <div class="health-bars">
+                                        <div class="health-bar-row">
+                                            <div class="bar-info">
+                                                <span>Formatting Quality</span>
+                                                <span id="bar-val-formatting">0%</span>
+                                            </div>
+                                            <div class="progress-bar-track">
+                                                <div class="progress-bar-fill fill-indigo" id="bar-fill-formatting" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="health-bar-row">
+                                            <div class="bar-info">
+                                                <span>Vocabulary Diversity</span>
+                                                <span id="bar-val-vocabulary">0%</span>
+                                            </div>
+                                            <div class="progress-bar-track">
+                                                <div class="progress-bar-fill fill-cyan" id="bar-fill-vocabulary" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- LangSmith Connection & Observability -->
+                            <div class="dash-card">
+                                <div class="card-header">
+                                    <h3>LangSmith Observatory</h3>
+                                    <span class="obs-badge inactive" id="obs-status-badge">Off</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="obs-status-row">
+                                        <div class="obs-status-icon-wrapper" id="obs-status-icon">🔍</div>
+                                        <div class="obs-status-content">
+                                            <h4 id="obs-project-name">Telemetry Inactive</h4>
+                                            <p id="obs-status-description">Set LANGCHAIN_TRACING_V2 in your environment or settings to enable visual trace audits.</p>
+                                        </div>
+                                    </div>
+                                    <div class="obs-actions">
+                                        <a href="https://smith.langchain.com/" target="_blank" class="btn btn-obs-action" id="btn-open-langsmith">Open LangSmith Console</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Live Activity Log -->
+                            <div class="dash-card">
+                                <div class="card-header">
+                                    <h3>Live System Event Log</h3>
+                                </div>
+                                <div class="card-body logs-body">
+                                    <div class="dash-logs-container" id="dash-logs-container">
+                                        <div class="log-empty-state">
+                                            <span>📡</span> Listening for network and collaborative events...
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ═══ Rich Text Editor (Quill) ═══ -->
-                <div class="editor-wrapper" id="editor-richtext">
-                    <div id="quill-toolbar">
-                        <span class="ql-formats">
-                            <select class="ql-header" aria-label="Text format">
-                                <option value="1">Heading 1</option>
-                                <option value="2">Heading 2</option>
-                                <option value="3">Heading 3</option>
-                                <option selected>Normal</option>
-                            </select>
-                        </span>
-                        <span class="ql-formats">
-                            <button class="ql-bold" aria-label="Bold"></button>
-                            <button class="ql-italic" aria-label="Italic"></button>
-                            <button class="ql-underline" aria-label="Underline"></button>
-                            <button class="ql-strike" aria-label="Strikethrough"></button>
-                        </span>
-                        <span class="ql-formats">
-                            <button class="ql-list" value="ordered" aria-label="Ordered list"></button>
-                            <button class="ql-list" value="bullet" aria-label="Bullet list"></button>
-                            <button class="ql-blockquote" aria-label="Blockquote"></button>
-                            <button class="ql-code-block" aria-label="Code block"></button>
-                        </span>
-                        <span class="ql-formats">
-                            <button class="ql-link" aria-label="Insert link"></button>
-                            <button class="ql-image" aria-label="Insert image"></button>
-                        </span>
-                        <span class="ql-formats">
-                            <button class="ql-clean" aria-label="Clear formatting"></button>
-                        </span>
-                    </div>
-                    <div id="quill-editor"></div>
-                </div>
+                <!-- 2.2.2 EDITOR WORKSPACE VIEW -->
+                <div class="view-pane" id="editor-pane">
+                    <div class="editor-pane-layout">
+                        <!-- Internal Document Library list -->
+                        <aside class="editor-sidebar" id="editor-sidebar">
+                            <div class="sidebar-header-internal">
+                                <div class="search-wrapper">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                    <input type="text" id="editor-search-input" placeholder="Filter library notes..." autocomplete="off">
+                                </div>
+                                <button class="btn-new-doc-internal" id="btn-new-doc-internal">＋ New Note</button>
+                            </div>
+                            <div class="doc-list" id="editor-doc-list">
+                                <!-- Populated Dynamically -->
+                            </div>
+                        </aside>
 
-                <!-- ═══ Markdown Editor ═══ -->
-                <div class="markdown-wrapper" id="editor-markdown" style="display:none;">
-                    <div class="markdown-editor-pane">
-                        <div class="md-toolbar">
-                            <span class="md-toolbar-label">MARKDOWN</span>
-                            <div class="md-toolbar-actions">
-                                <button class="md-btn" id="md-btn-bold" title="Bold (Ctrl+B)">B</button>
-                                <button class="md-btn" id="md-btn-italic" title="Italic (Ctrl+I)"><em>I</em></button>
-                                <button class="md-btn" id="md-btn-code" title="Code">&lt;/&gt;</button>
-                                <button class="md-btn" id="md-btn-link" title="Link">🔗</button>
-                                <button class="md-btn" id="md-btn-heading" title="Heading">H</button>
+                        <!-- Editor Center Pane -->
+                        <div class="editor-workspace-core">
+                            <!-- Welcome Screen (No Note Selected) -->
+                            <div class="welcome-screen" id="welcome-screen">
+                                <div class="welcome-icon">✨</div>
+                                <h2>Welcome to MCP Document Editor</h2>
+                                <p>Select a document from the Library sidebar, or create a new note to start collaborating.</p>
+                            </div>
+
+                            <!-- Editor Elements Container -->
+                            <div id="editor-content-wrapper" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+                                <div class="editor-top-bar">
+                                    <input type="text" id="doc-title" value="Untitled Document" spellcheck="false" aria-label="Document Title">
+                                    
+                                    <div class="editor-actions">
+                                        <button class="btn-icon" id="btn-markdown-toggle" title="Toggle Markdown Mode">
+                                            💻 <span class="tooltip">Markdown Mode</span>
+                                        </button>
+                                        <button class="btn-icon" id="btn-search-replace" title="Search & Replace">
+                                            🔍 <span class="tooltip">Search & Replace</span>
+                                        </button>
+                                        <button class="btn-icon" id="btn-versions" title="Version History">
+                                            🕐 <span class="tooltip">Version History</span>
+                                        </button>
+                                        <button class="btn-icon" id="btn-graph-view" title="Graph View">
+                                            🕸️ <span class="tooltip">Graph View</span>
+                                        </button>
+                                        <div style="position: relative;">
+                                            <button class="btn-icon" id="btn-export" title="Export">
+                                                📥 <span class="tooltip">Export</span>
+                                            </button>
+                                            <div class="dropdown" id="export-dropdown">
+                                                <button class="dropdown-item" data-format="html" id="export-html">🌐 Export as HTML</button>
+                                                <button class="dropdown-item" data-format="md" id="export-md">📄 Export as Markdown</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Text Editor Area -->
+                                <div class="editor-area-wrapper">
+                                    <!-- Rich Text -->
+                                    <div class="editor-wrapper" id="editor-richtext">
+                                        <div id="quill-toolbar">
+                                            <span class="ql-formats">
+                                                <select class="ql-header" aria-label="Heading formatting">
+                                                    <option value="1">Heading 1</option>
+                                                    <option value="2">Heading 2</option>
+                                                    <option value="3">Heading 3</option>
+                                                    <option selected>Normal</option>
+                                                </select>
+                                            </span>
+                                            <span class="ql-formats">
+                                                <button class="ql-bold" aria-label="Bold"></button>
+                                                <button class="ql-italic" aria-label="Italic"></button>
+                                                <button class="ql-underline" aria-label="Underline"></button>
+                                                <button class="ql-strike" aria-label="Strikethrough"></button>
+                                            </span>
+                                            <span class="ql-formats">
+                                                <button class="ql-list" value="ordered" aria-label="Ordered list"></button>
+                                                <button class="ql-list" value="bullet" aria-label="Bullet list"></button>
+                                                <button class="ql-blockquote" aria-label="Quote"></button>
+                                                <button class="ql-code-block" aria-label="Code block"></button>
+                                            </span>
+                                            <span class="ql-formats">
+                                                <button class="ql-link" aria-label="Link"></button>
+                                                <button class="ql-image" aria-label="Image"></button>
+                                            </span>
+                                            <span class="ql-formats">
+                                                <button class="ql-clean" aria-label="Clear formatting"></button>
+                                            </span>
+                                        </div>
+                                        <div id="quill-editor"></div>
+                                    </div>
+
+                                    <!-- Markdown Plain Text -->
+                                    <div class="markdown-wrapper" id="editor-markdown" style="display:none;">
+                                        <div class="markdown-editor-pane">
+                                            <div class="md-toolbar">
+                                                <span class="md-toolbar-label">MARKDOWN SOURCE</span>
+                                            </div>
+                                            <textarea id="markdown-input" placeholder="Write markdown..." spellcheck="false"></textarea>
+                                        </div>
+                                        <div class="markdown-preview-pane">
+                                            <div class="md-toolbar">
+                                                <span class="md-toolbar-label">PREVIEW OUT</span>
+                                            </div>
+                                            <div class="md-preview-content" id="markdown-preview"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Status Bar -->
+                                <div class="editor-status-bar">
+                                    <div class="status-item">
+                                        <span class="status-dot connected" id="status-dot"></span>
+                                        <span id="status-text">Connected</span>
+                                    </div>
+                                    <div class="status-item" id="status-save">💾 Saved</div>
+                                    <div class="status-item editor-mode-badge" id="editor-mode-badge">📝 Rich Text</div>
+                                    <span class="spacer"></span>
+                                    <div class="status-item" id="word-count">0 words</div>
+                                    <div class="status-item" id="version-count">0 versions</div>
+                                </div>
                             </div>
                         </div>
-                        <textarea id="markdown-input" placeholder="Write your markdown here…" spellcheck="false"></textarea>
                     </div>
-                    <div class="markdown-preview-pane">
-                        <div class="md-toolbar">
-                            <span class="md-toolbar-label">PREVIEW</span>
-                        </div>
-                        <div class="md-preview-content" id="markdown-preview"></div>
-                    </div>
-                </div>
-
-                <!-- Status Bar -->
-                <div class="status-bar">
-                    <div class="status-item">
-                        <span class="status-dot connected" id="status-dot"></span>
-                        <span id="status-text">Connected</span>
-                    </div>
-                    <div class="status-item" id="status-save">
-                        💾 Saved
-                    </div>
-                    <div class="status-item editor-mode-badge" id="editor-mode-badge">
-                        📝 Rich Text
-                    </div>
-                    <span class="spacer"></span>
-                    <div class="status-item" id="word-count">0 words</div>
-                    <div class="status-item" id="version-count">0 versions</div>
                 </div>
             </div>
-        </main>
+        </div>
 
-        <!-- ═══ AI Assistant Sidebar ═══ -->
+        <!-- ═══ 3. AI ASSISTANT PANEL SIDEBAR ═══ -->
         <aside class="ai-panel" id="ai-panel" style="display: none;">
             <div class="ai-panel-header">
                 <div class="ai-header-title">
@@ -244,7 +452,7 @@
                 </div>
             </div>
 
-            <!-- Settings Container -->
+            <!-- Settings -->
             <div class="ai-settings-container" id="ai-settings-container" style="display: none;">
                 <h3>⚙️ AI Configuration</h3>
                 <div class="ai-setting-field">
@@ -263,7 +471,7 @@
                 <div class="ai-setting-field">
                     <label for="ai-key">API Key</label>
                     <input type="password" id="ai-key" placeholder="Enter API key...">
-                    <small>Stored locally in your browser.</small>
+                    <small>Leave blank to use server .env key.</small>
                 </div>
                 <div class="ai-setting-field" id="ollama-url-field" style="display: none;">
                     <label for="ai-endpoint">Ollama Endpoint</label>
@@ -289,7 +497,7 @@
                 </div>
             </div>
 
-            <!-- Chat Messages -->
+            <!-- Messages -->
             <div class="ai-chat-body" id="ai-chat-body">
                 <div class="ai-message assistant">
                     <div class="ai-bubble-meta">Assistant</div>
@@ -299,7 +507,7 @@
                 </div>
             </div>
 
-            <!-- Chat Footer / Input -->
+            <!-- Footer Input -->
             <div class="ai-chat-footer">
                 <div class="ai-scope-selector">
                     <label>
@@ -402,7 +610,6 @@
                     <div class="legend-item"><span class="legend-dot ghost"></span><span>Ghost Note (Uncreated)</span></div>
                 </div>
 
-                <!-- Floating Instructions -->
                 <div class="graph-instructions">
                     💡 Left-click: Open Note | Drag Canvas: Pan | Drag Node: Move | Scroll: Zoom
                 </div>
@@ -410,7 +617,7 @@
         </div>
     </div>
 
-    <!-- ═══ Native Glassmorphism HUD ═══ -->
+    <!-- ═══ Collapsible Floating HUD Window (kept for floating convenience) ═══ -->
     <div id="hud-window" class="hud-window hidden">
         <div class="hud-header" id="hud-header">
             <div class="hud-title-row">
@@ -531,7 +738,6 @@
                 </div>
             </div>
         </div>
-        <!-- Resize Handle -->
         <div class="hud-resize-handle" id="hud-resize-handle"></div>
     </div>
 

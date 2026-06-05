@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Form
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Form, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
@@ -270,6 +270,66 @@ async def api_create_document(
     tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
     doc = await store.create(title=title, content=content, tags=tag_list)
     return {"id": doc.id, "title": doc.title, "created_at": str(doc.created_at)}
+
+
+@app.post("/api/documents/import")
+async def api_import_file(file: UploadFile = File(...)):
+    """Import an uploaded markdown or text file into the database."""
+    try:
+        filename = file.filename
+        content_bytes = await file.read()
+        content = content_bytes.decode("utf-8", errors="ignore")
+        
+        # Format title from filename
+        title = Path(filename).stem
+        title = title.replace("_", " ").replace("-", " ").title()
+        
+        # Create a document
+        doc = await store.create(title=title, content=content, tags=["Imported"])
+        return {"id": doc.id, "title": doc.title, "filename": filename}
+    except Exception as e:
+        logger.error(f"Failed to import file: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.get("/api/documents/scan")
+async def api_scan_workspace():
+    """Scan the workspace directory for untracked .md or .txt files."""
+    try:
+        project_root = Path(__file__).parent.parent
+        files = []
+        # Exclude hidden files or config files
+        for file in project_root.glob("*"):
+            if file.is_file() and file.suffix.lower() in (".md", ".txt") and not file.name.startswith("."):
+                stat = file.stat()
+                files.append({
+                    "name": file.name,
+                    "path": str(file.resolve()),
+                    "size": stat.st_size,
+                    "modified": stat.st_mtime,
+                })
+        return {"files": files}
+    except Exception as e:
+        logger.error(f"Failed to scan workspace: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/documents/import-local")
+async def api_import_local_file(path: str = Form(...)):
+    """Import a local file from a given path on disk."""
+    try:
+        file_path = Path(path)
+        if not file_path.exists() or not file_path.is_file():
+            return JSONResponse({"error": "File not found or is not a file"}, status_code=404)
+        
+        content = await asyncio.to_thread(file_path.read_text, encoding="utf-8", errors="ignore")
+        
+        title = file_path.stem.replace("_", " ").replace("-", " ").title()
+        doc = await store.create(title=title, content=content, tags=["Local System"])
+        return {"id": doc.id, "title": doc.title, "path": path}
+    except Exception as e:
+        logger.error(f"Failed to import local file: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 @app.get("/api/documents")
@@ -547,8 +607,15 @@ async def api_create_by_title(title: str = Form(...)):
 @app.get("/api/dashboard/stats")
 async def api_dashboard_stats():
     """Return server stats for the admin dashboard."""
+    import os
     docs = await store.list_all()
     info = tracker.get_server_info()
+    
+    # Check LangSmith telemetry settings
+    langchain_tracing = os.getenv("LANGCHAIN_TRACING_V2", "").lower() == "true"
+    langchain_api_key_set = bool(os.getenv("LANGCHAIN_API_KEY"))
+    langchain_project = os.getenv("LANGCHAIN_PROJECT", "mcp-document-editor")
+    
     return {
         **info,
         "documents": len(docs),
@@ -562,6 +629,11 @@ async def api_dashboard_stats():
         "ws_connections": manager.total_client_count,
         "ws_documents": len([d for d in manager.active if d != "dashboard"]),
         "connections": manager.get_all_connections(),
+        "langsmith": {
+            "tracing": langchain_tracing,
+            "has_key": langchain_api_key_set,
+            "project": langchain_project,
+        }
     }
 
 

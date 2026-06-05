@@ -194,16 +194,19 @@ async function openDocument(docId) {
         currentDocId = docId;
 
         // Show editor
-        document.getElementById('welcome-screen').style.display = 'none';
-        const editorContainer = document.getElementById('editor-container');
-        editorContainer.style.display = 'flex';
+        const welcomeScreen = document.getElementById('welcome-screen');
+        if (welcomeScreen) welcomeScreen.style.display = 'none';
+        const editorContainer = document.getElementById('editor-content-wrapper');
+        if (editorContainer) editorContainer.style.display = 'flex';
 
         // Set content
-        document.getElementById('doc-title').value = doc.title;
+        const titleEl = document.getElementById('doc-title');
+        if (titleEl) titleEl.value = doc.title;
 
         if (isMarkdownMode) {
             // Convert HTML to markdown for the markdown editor
-            document.getElementById('markdown-input').value = htmlToMarkdown(doc.content || '');
+            const mdInput = document.getElementById('markdown-input');
+            if (mdInput) mdInput.value = htmlToMarkdown(doc.content || '');
             renderMarkdownPreview();
         } else {
             isRemoteUpdate = true;
@@ -218,14 +221,15 @@ async function openDocument(docId) {
 
         // Update UI
         updateWordCount();
-        document.getElementById('version-count').textContent = `${doc.version_count} versions`;
+        const versionCount = document.getElementById('version-count');
+        if (versionCount) versionCount.textContent = `${doc.version_count} versions`;
         highlightActiveDoc(docId);
 
         // Connect WebSocket
         connectWebSocket(docId);
 
         // Close mobile sidebar
-        document.getElementById('sidebar').classList.remove('mobile-open');
+        document.getElementById('sidebar')?.classList.remove('mobile-open');
     } catch (e) {
         console.error('Failed to open document:', e);
         toast('Failed to open document', 'error');
@@ -295,8 +299,10 @@ async function confirmDeleteDocument() {
             toast('Document deleted', 'info');
             if (currentDocId === docId) {
                 currentDocId = null;
-                document.getElementById('editor-container').style.display = 'none';
-                document.getElementById('welcome-screen').style.display = 'flex';
+                const editorContainer = document.getElementById('editor-content-wrapper');
+                if (editorContainer) editorContainer.style.display = 'none';
+                const welcomeScreen = document.getElementById('welcome-screen');
+                if (welcomeScreen) welcomeScreen.style.display = 'flex';
                 disconnectWebSocket();
             }
             await refreshDocList();
@@ -319,51 +325,59 @@ function closeDeleteModal() {
 // ═══════════════════════════════════════════════════════════════════
 
 async function refreshDocList(query = '') {
-    const loading = document.getElementById('doc-list-loading');
-    const empty = document.getElementById('doc-list-empty');
-    const list = document.getElementById('doc-list');
-
-    // Show loading state
-    loading.style.display = 'flex';
-    empty.style.display = 'none';
-
-    // Remove existing items & section headers
-    list.querySelectorAll('.doc-item, .doc-pinned-header, .doc-unpinned-header').forEach(el => el.remove());
+    const listInternal = document.getElementById('editor-doc-list');
+    const listDash = document.getElementById('dash-documents-list');
 
     const docs = await fetchDocuments(query);
 
-    // Hide loading
-    loading.style.display = 'none';
+    // 1. Populate Editor Doc List
+    if (listInternal) {
+        listInternal.innerHTML = '';
+        if (docs.length === 0) {
+            listInternal.innerHTML = '<div class="empty-scan-state">No documents yet.</div>';
+        } else {
+            const pinnedDocs = docs.filter(d => d.pinned);
+            const unpinnedDocs = docs.filter(d => !d.pinned);
 
-    if (docs.length === 0) {
-        empty.style.display = 'flex';
-        return;
+            if (pinnedDocs.length > 0) {
+                const header = document.createElement('div');
+                header.className = 'doc-pinned-header';
+                header.innerHTML = '📌 Pinned';
+                listInternal.appendChild(header);
+                pinnedDocs.forEach(doc => listInternal.appendChild(createDocItem(doc)));
+            }
+
+            if (unpinnedDocs.length > 0 && pinnedDocs.length > 0) {
+                const header = document.createElement('div');
+                header.className = 'doc-unpinned-header';
+                header.innerHTML = 'All Documents';
+                listInternal.appendChild(header);
+            }
+            unpinnedDocs.forEach(doc => listInternal.appendChild(createDocItem(doc)));
+        }
     }
 
-    empty.style.display = 'none';
-
-    const pinnedDocs = docs.filter(d => d.pinned);
-    const unpinnedDocs = docs.filter(d => !d.pinned);
-
-    // Render pinned section
-    if (pinnedDocs.length > 0) {
-        const header = document.createElement('div');
-        header.className = 'doc-pinned-header';
-        header.innerHTML = '📌 Pinned';
-        list.appendChild(header);
-
-        pinnedDocs.forEach(doc => list.appendChild(createDocItem(doc)));
+    // 2. Populate Dashboard Doc List
+    if (listDash) {
+        listDash.innerHTML = '';
+        if (docs.length === 0) {
+            listDash.innerHTML = '<div class="empty-scan-state">No documents in library.</div>';
+        } else {
+            // Take the top 5 recent documents
+            const recentDocs = docs.slice(0, 5);
+            recentDocs.forEach(doc => listDash.appendChild(createDashDocItem(doc)));
+        }
     }
 
-    // Render unpinned section
-    if (unpinnedDocs.length > 0 && pinnedDocs.length > 0) {
-        const header = document.createElement('div');
-        header.className = 'doc-unpinned-header';
-        header.innerHTML = 'All Documents';
-        list.appendChild(header);
-    }
+    // 3. Update Dashboard KPI count
+    const kpiCount = document.getElementById('kpi-docs-count');
+    if (kpiCount) kpiCount.innerText = docs.length;
 
-    unpinnedDocs.forEach(doc => list.appendChild(createDocItem(doc)));
+    // 4. Update Donut Chart
+    updateDonutChart(docs);
+
+    // 5. Update Health Score Circular Gauge
+    updateWorkspaceHealth(docs);
 }
 
 function createDocItem(doc) {
@@ -387,6 +401,259 @@ function createDocItem(doc) {
     `;
     el.addEventListener('click', () => openDocument(doc.id));
     return el;
+}
+
+function createDashDocItem(doc) {
+    const el = document.createElement('div');
+    el.className = 'dash-doc-item';
+    
+    const updated = new Date(doc.updated_at);
+    const timeStr = formatRelativeTime(updated);
+    const icon = doc.pinned ? '📌' : '📄';
+    
+    el.innerHTML = `
+        <div class="doc-info-left">
+            <span class="doc-item-icon">${icon}</span>
+            <div>
+                <div class="doc-title-bold">${escapeHtml(doc.title)}</div>
+                <div class="doc-meta-small">${doc.word_count} words • updated ${timeStr}</div>
+            </div>
+        </div>
+        <button class="btn-open-doc-dash" data-id="${doc.id}">Open</button>
+    `;
+    el.querySelector('.btn-open-doc-dash').addEventListener('click', () => {
+        openDocument(doc.id);
+        switchView('workspace');
+    });
+    return el;
+}
+
+function updateDonutChart(docs) {
+    const total = docs.length;
+    const totalLabel = document.getElementById('dash-total-docs');
+    if (totalLabel) totalLabel.innerText = total;
+
+    const pinnedCount = docs.filter(d => d.pinned).length;
+    const unpinnedCount = total - pinnedCount;
+
+    const legendPinned = document.getElementById('legend-count-pinned');
+    const legendUnpinned = document.getElementById('legend-count-unpinned');
+    if (legendPinned) legendPinned.innerText = pinnedCount;
+    if (legendUnpinned) legendUnpinned.innerText = unpinnedCount;
+
+    const segPinned = document.getElementById('donut-seg-pinned');
+    const segUnpinned = document.getElementById('donut-seg-unpinned');
+
+    if (total === 0) {
+        segPinned?.setAttribute('stroke-dasharray', '0 100');
+        segUnpinned?.setAttribute('stroke-dasharray', '0 100');
+        return;
+    }
+
+    const pinnedPercent = (pinnedCount / total) * 100;
+    const unpinnedPercent = (unpinnedCount / total) * 100;
+
+    segPinned?.setAttribute('stroke-dasharray', `${pinnedPercent} 100`);
+    
+    // Position unpinned segment after pinned segment
+    segUnpinned?.setAttribute('stroke-dasharray', `${unpinnedPercent} 100`);
+    segUnpinned?.setAttribute('stroke-dashoffset', `${100 - pinnedPercent + 25}`);
+}
+
+function updateWorkspaceHealth(docs) {
+    if (docs.length === 0) {
+        const score = document.getElementById('gauge-score');
+        if (score) score.innerText = '0';
+        document.getElementById('health-gauge-value')?.setAttribute('stroke-dasharray', '0 100');
+        
+        const fVal = document.getElementById('bar-val-formatting');
+        const fFill = document.getElementById('bar-fill-formatting');
+        if (fVal) fVal.innerText = '0%';
+        if (fFill) fFill.style.width = '0%';
+        
+        const vVal = document.getElementById('bar-val-vocabulary');
+        const vFill = document.getElementById('bar-fill-vocabulary');
+        if (vVal) vVal.innerText = '0%';
+        if (vFill) vFill.style.width = '0%';
+        return;
+    }
+
+    let totalWords = 0;
+    let pinnedRatio = docs.filter(d => d.pinned).length / docs.length;
+    docs.forEach(d => {
+        totalWords += d.word_count || 0;
+    });
+
+    const avgWords = totalWords / docs.length;
+    
+    // Formatting score: based on avg word counts and pinned documents structure
+    let formattingScore = Math.min(Math.round(40 + (avgWords / 15) + (pinnedRatio * 20)), 95);
+    // Vocabulary score: based on variety and document counts
+    let vocabularyScore = Math.min(Math.round(50 + (docs.length * 4) + (avgWords / 30)), 98);
+    
+    // Overall Health Score
+    let overallScore = Math.round((formattingScore + vocabularyScore) / 2);
+
+    const score = document.getElementById('gauge-score');
+    if (score) score.innerText = overallScore;
+    document.getElementById('health-gauge-value')?.setAttribute('stroke-dasharray', `${overallScore} 100`);
+
+    const fVal = document.getElementById('bar-val-formatting');
+    const fFill = document.getElementById('bar-fill-formatting');
+    if (fVal) fVal.innerText = `${formattingScore}%`;
+    if (fFill) fFill.style.width = `${formattingScore}%`;
+
+    const vVal = document.getElementById('bar-val-vocabulary');
+    const vFill = document.getElementById('bar-fill-vocabulary');
+    if (vVal) vVal.innerText = `${vocabularyScore}%`;
+    if (vFill) vFill.style.width = `${vocabularyScore}%`;
+}
+
+function updateLangSmithStatus(langsmith) {
+    const badge = document.getElementById('obs-status-badge');
+    const projectName = document.getElementById('obs-project-name');
+    const desc = document.getElementById('obs-status-description');
+    const icon = document.getElementById('obs-status-icon');
+
+    if (!badge || !projectName || !desc) return;
+
+    if (langsmith && langsmith.tracing) {
+        badge.innerText = 'Active';
+        badge.className = 'obs-badge active';
+        projectName.innerText = langsmith.project || 'mcp-document-editor';
+        desc.innerText = 'LangChain telemetry is tracing your MCP tool calls and document queries in real-time.';
+        if (icon) {
+            icon.innerText = '🟢';
+            icon.style.background = '#dcfce7';
+        }
+    } else {
+        badge.innerText = 'Off';
+        badge.className = 'obs-badge inactive';
+        projectName.innerText = 'Telemetry Inactive';
+        desc.innerText = 'Set LANGCHAIN_TRACING_V2=true and LANGCHAIN_API_KEY in your .env file to trace MCP executions.';
+        if (icon) {
+            icon.innerText = '🔍';
+            icon.style.background = 'var(--bg-tertiary)';
+        }
+    }
+}
+
+async function handleFileUpload(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        toast('Uploading file...', 'info');
+        const res = await fetch('/api/documents/import', {
+            method: 'POST',
+            body: formData
+        });
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const data = await res.json();
+        toast(`File imported: ${data.title}`, 'success');
+        
+        await refreshDocList();
+        await openDocument(data.id);
+        switchView('workspace');
+    } catch (e) {
+        console.error('File import failed:', e);
+        toast(`File import failed: ${e.message}`, 'error');
+    }
+}
+
+async function scanLocalFolder() {
+    try {
+        toast('Scanning workspace folder...', 'info');
+        const res = await fetch('/api/documents/scan');
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const data = await res.json();
+        renderScannedFiles(data.files || []);
+        toast(`Scan complete. Found ${data.files ? data.files.length : 0} files.`, 'success');
+    } catch (e) {
+        console.error('Directory scan failed:', e);
+        toast(`Scan failed: ${e.message}`, 'error');
+    }
+}
+
+function renderScannedFiles(files) {
+    const list = document.getElementById('local-files-list');
+    if (!list) return;
+
+    list.innerHTML = '';
+    if (files.length === 0) {
+        list.innerHTML = `<div class="empty-scan-state">📂 No untracked .md or .txt files found in workspace root.</div>`;
+        return;
+    }
+
+    files.forEach(file => {
+        const el = document.createElement('div');
+        el.className = 'local-file-item';
+        
+        const sizeKB = (file.size / 1024).toFixed(1);
+        
+        el.innerHTML = `
+            <div>
+                <div class="local-file-name" title="${escapeHtml(file.path)}">${escapeHtml(file.name)}</div>
+                <div class="local-file-size">${sizeKB} KB</div>
+            </div>
+            <button class="btn-import-local">Import</button>
+        `;
+        el.querySelector('.btn-import-local').addEventListener('click', async () => {
+            await importLocalFile(file.path);
+        });
+        list.appendChild(el);
+    });
+}
+
+async function importLocalFile(filePath) {
+    try {
+        toast('Importing local file...', 'info');
+        const formData = new FormData();
+        formData.append('path', filePath);
+        
+        const res = await fetch('/api/documents/import-local', {
+            method: 'POST',
+            body: formData
+        });
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const data = await res.json();
+        toast(`Imported: ${data.title}`, 'success');
+        
+        await refreshDocList();
+        await openDocument(data.id);
+        switchView('workspace');
+    } catch (e) {
+        console.error('Local file import failed:', e);
+        toast(`Import failed: ${e.message}`, 'error');
+    }
+}
+
+function switchView(view) {
+    const globalTab = document.getElementById('tab-global-view');
+    const workspaceTab = document.getElementById('tab-workspace-view');
+    const dashboardPane = document.getElementById('dashboard-pane');
+    const editorPane = document.getElementById('editor-pane');
+
+    if (view === 'global') {
+        globalTab?.classList.add('active');
+        workspaceTab?.classList.remove('active');
+        dashboardPane?.classList.add('active');
+        editorPane?.classList.remove('active');
+        setActiveNavItem('nav-dashboard');
+    } else {
+        globalTab?.classList.remove('active');
+        workspaceTab?.classList.add('active');
+        dashboardPane?.classList.remove('active');
+        editorPane?.classList.add('active');
+        setActiveNavItem('nav-library');
+    }
+}
+
+function setActiveNavItem(id) {
+    document.querySelectorAll('.global-sidebar .nav-item').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById(id)?.classList.add('active');
 }
 
 async function togglePin(docId) {
@@ -1006,28 +1273,52 @@ const HUD = {
 
     updateStats(data) {
         if (data.total_requests !== undefined) {
-            document.getElementById('hud-requests').textContent = data.total_requests;
+            const el = document.getElementById('hud-requests');
+            if (el) el.textContent = data.total_requests;
+            const kpi = document.getElementById('kpi-reqs-count');
+            if (kpi) kpi.textContent = data.total_requests;
         }
         if (data.total_errors !== undefined) {
-            document.getElementById('hud-errors').textContent = data.total_errors;
+            const el = document.getElementById('hud-errors');
+            if (el) el.textContent = data.total_errors;
         }
         if (data.avg_latency_ms !== undefined) {
-            document.getElementById('hud-latency').textContent = `${Math.round(data.avg_latency_ms)}ms`;
+            const valStr = `${Math.round(data.avg_latency_ms)}ms`;
+            const el = document.getElementById('hud-latency');
+            if (el) el.textContent = valStr;
+            const kpi = document.getElementById('kpi-health-latency');
+            if (kpi) kpi.textContent = `Lat: ${valStr}`;
         }
         if (data.ws_connections !== undefined) {
-            document.getElementById('hud-ws').textContent = data.ws_connections;
+            const el = document.getElementById('hud-ws');
+            if (el) el.textContent = data.ws_connections;
+            const kpi = document.getElementById('kpi-conns-count');
+            if (kpi) kpi.textContent = data.ws_connections;
         }
         if (data.memory) {
-            document.getElementById('hud-memory').textContent = data.memory;
+            const el = document.getElementById('hud-memory');
+            if (el) el.textContent = data.memory;
         }
         if (data.uptime) {
-            document.getElementById('hud-uptime').textContent = data.uptime;
+            const el = document.getElementById('hud-uptime');
+            if (el) el.textContent = data.uptime;
+            const kpi = document.getElementById('kpi-health-uptime');
+            if (kpi) kpi.textContent = data.uptime;
         }
         if (data.documents !== undefined) {
-            document.getElementById('hud-documents-count').textContent = data.documents;
+            const el = document.getElementById('hud-documents-count');
+            if (el) el.textContent = data.documents;
         }
         if (data.error_rate !== undefined) {
-            document.getElementById('hud-error-rate').textContent = `${data.error_rate}%`;
+            const el = document.getElementById('hud-error-rate');
+            if (el) el.textContent = `${data.error_rate}%`;
+            const kpi = document.getElementById('kpi-reqs-speed');
+            if (kpi) kpi.textContent = `Err: ${data.error_rate}%`;
+        }
+        
+        // ── Observability Telemetry Card ──
+        if (data.langsmith) {
+            updateLangSmithStatus(data.langsmith);
         }
     },
 
@@ -1103,6 +1394,30 @@ const HUD = {
 
         const logCount = document.getElementById('hud-log-count');
         if (logCount) logCount.textContent = `${this.logEntries.length} events`;
+
+        // ── Stream to Dashboard logs container ──
+        const dashLog = document.getElementById('dash-logs-container');
+        if (dashLog) {
+            const dashEmpty = dashLog.querySelector('.log-empty-state');
+            if (dashEmpty) dashEmpty.remove();
+
+            const dashEntry = document.createElement('div');
+            dashEntry.className = 'log-line';
+            
+            dashEntry.innerHTML = `
+                <span class="log-time">[${timeStr}]</span>
+                <span class="log-method ${methodClass}">${method}</span>
+                <span class="log-path">${escapeHtml(path)}</span>
+                ${status ? `<span class="log-status ${statusClass}">${status}</span>` : ''}
+                ${detail ? `<span class="log-detail">(${escapeHtml(detail)})</span>` : ''}
+                ${duration ? `<span class="log-detail">- ${duration}</span>` : ''}
+            `;
+            dashLog.insertBefore(dashEntry, dashLog.firstChild);
+
+            while (dashLog.children.length > this.MAX_LOG) {
+                dashLog.lastChild.remove();
+            }
+        }
     },
 
     clearLog() {
@@ -1112,6 +1427,13 @@ const HUD = {
         }
         const empty = document.getElementById('hud-log-empty');
         if (empty) empty.style.display = 'flex';
+
+        // Clear dashboard log
+        const dashLog = document.getElementById('dash-logs-container');
+        if (dashLog) {
+            dashLog.innerHTML = `<div class="log-empty-state"><span>📡</span> Listening for network and collaborative events...</div>`;
+        }
+
         this.logEntries = [];
         const logCount = document.getElementById('hud-log-count');
         if (logCount) logCount.textContent = '0 events';
@@ -1285,27 +1607,92 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ── Sidebar ──
-    document.getElementById('btn-new-doc').addEventListener('click', createDocument);
+    // ── Auto-connect live metrics telemetry stream ──
+    try {
+        HUD.connect();
+    } catch (e) {
+        console.error('Failed to auto-connect HUD metrics:', e);
+    }
 
+    // ── Sidebar Note Creation ──
+    document.getElementById('btn-new-doc-dash')?.addEventListener('click', createDocument);
+    document.getElementById('btn-new-doc-internal')?.addEventListener('click', createDocument);
+
+    // ── Library Document Filtering ──
     let searchTimeout;
-    document.getElementById('sidebar-search').addEventListener('input', (e) => {
+    document.getElementById('editor-search-input')?.addEventListener('input', (e) => {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => refreshDocList(e.target.value), 300);
     });
 
-    // ── Mobile sidebar toggle ──
-    document.getElementById('mobile-menu-btn').addEventListener('click', () => {
-        document.getElementById('sidebar').classList.toggle('mobile-open');
+    // ── Global Sidebar Tab Switches ──
+    document.getElementById('nav-dashboard')?.addEventListener('click', () => switchView('global'));
+    document.getElementById('nav-library')?.addEventListener('click', () => switchView('workspace'));
+    document.getElementById('nav-graph')?.addEventListener('click', openGraphModal);
+    document.getElementById('nav-hud')?.addEventListener('click', () => HUD.toggle());
+    document.getElementById('nav-settings')?.addEventListener('click', () => {
+        if (!isAIOpen) toggleAIPanel();
+        toggleAISettings();
     });
 
-    // Close sidebar on outside click (mobile)
-    document.getElementById('main-area').addEventListener('click', () => {
-        document.getElementById('sidebar').classList.remove('mobile-open');
+    // ── View Toggle Tabs (Header) ──
+    document.getElementById('tab-global-view')?.addEventListener('click', () => switchView('global'));
+    document.getElementById('tab-workspace-view')?.addEventListener('click', () => switchView('workspace'));
+
+    // ── Corp AI Button ──
+    document.getElementById('btn-corp-ai')?.addEventListener('click', () => toggleAIPanel());
+
+    // ── Local System Files Upload (Drag & Drop) ──
+    const fileDropZone = document.getElementById('file-drop-zone');
+    const fileInputUploader = document.getElementById('file-input-uploader');
+    if (fileDropZone && fileInputUploader) {
+        fileDropZone.addEventListener('click', () => fileInputUploader.click());
+        fileInputUploader.addEventListener('change', () => {
+            if (fileInputUploader.files && fileInputUploader.files[0]) {
+                handleFileUpload(fileInputUploader.files[0]);
+            }
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileDropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileDropZone.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileDropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileDropZone.classList.remove('dragover');
+            }, false);
+        });
+
+        fileDropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files && files[0]) {
+                handleFileUpload(files[0]);
+            }
+        }, false);
+    }
+
+    // ── Folder Scanner Button ──
+    document.getElementById('btn-scan-files')?.addEventListener('click', () => scanLocalFolder());
+
+    // ── Mobile sidebar toggle (optional fallback) ──
+    document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
+        document.getElementById('sidebar')?.classList.toggle('mobile-open');
+    });
+
+    // Close sidebar on outside click (mobile optional fallback)
+    document.getElementById('main-area')?.addEventListener('click', () => {
+        document.getElementById('sidebar')?.classList.remove('mobile-open');
     });
 
     // ── Title change ──
-    document.getElementById('doc-title').addEventListener('change', () => {
+    document.getElementById('doc-title')?.addEventListener('change', () => {
         if (!currentDocId) return;
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => {
@@ -1321,27 +1708,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ── Version History ──
-    document.getElementById('btn-versions').addEventListener('click', openVersionPanel);
-    document.getElementById('version-panel-close').addEventListener('click', closeVersionPanel);
-    document.getElementById('panel-overlay').addEventListener('click', closeVersionPanel);
+    document.getElementById('btn-versions')?.addEventListener('click', openVersionPanel);
+    document.getElementById('version-panel-close')?.addEventListener('click', closeVersionPanel);
+    document.getElementById('panel-overlay')?.addEventListener('click', closeVersionPanel);
 
     // ── Search/Replace ──
-    document.getElementById('btn-search-replace').addEventListener('click', openSearchModal);
-    document.getElementById('search-cancel').addEventListener('click', closeSearchModal);
-    document.getElementById('search-execute').addEventListener('click', executeSearchReplace);
-    document.getElementById('search-modal').addEventListener('click', (e) => {
+    document.getElementById('btn-search-replace')?.addEventListener('click', openSearchModal);
+    document.getElementById('search-cancel')?.addEventListener('click', closeSearchModal);
+    document.getElementById('search-execute')?.addEventListener('click', executeSearchReplace);
+    document.getElementById('search-modal')?.addEventListener('click', (e) => {
         if (e.target === document.getElementById('search-modal')) closeSearchModal();
     });
 
     // ── Delete Confirmation ──
-    document.getElementById('delete-cancel').addEventListener('click', closeDeleteModal);
-    document.getElementById('delete-confirm').addEventListener('click', confirmDeleteDocument);
-    document.getElementById('delete-modal').addEventListener('click', (e) => {
+    document.getElementById('delete-cancel')?.addEventListener('click', closeDeleteModal);
+    document.getElementById('delete-confirm')?.addEventListener('click', confirmDeleteDocument);
+    document.getElementById('delete-modal')?.addEventListener('click', (e) => {
         if (e.target === document.getElementById('delete-modal')) closeDeleteModal();
     });
 
     // ── Export ──
-    document.getElementById('btn-export').addEventListener('click', (e) => {
+    document.getElementById('btn-export')?.addEventListener('click', (e) => {
         e.stopPropagation();
         toggleExportDropdown();
     });
@@ -1352,37 +1739,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Close dropdown on outside click
     document.addEventListener('click', () => {
-        document.getElementById('export-dropdown').classList.remove('active');
+        document.getElementById('export-dropdown')?.classList.remove('active');
     });
 
     // ── Markdown Mode ──
-    document.getElementById('btn-markdown-toggle').addEventListener('click', toggleMarkdownMode);
+    document.getElementById('btn-markdown-toggle')?.addEventListener('click', toggleMarkdownMode);
 
     // Markdown input handler
     const mdInput = document.getElementById('markdown-input');
     let mdSaveTimeout;
-    mdInput.addEventListener('input', () => {
-        renderMarkdownPreview();
-        updateWordCount();
+    if (mdInput) {
+        mdInput.addEventListener('input', () => {
+            renderMarkdownPreview();
+            updateWordCount();
 
-        // Update local graph connections in real time
-        updateLocalGraph();
+            // Update local graph connections in real time
+            updateLocalGraph();
 
-        // Auto-save
-        clearTimeout(mdSaveTimeout);
-        setStatusSaving();
-        mdSaveTimeout = setTimeout(() => saveDocument(), 800);
+            // Auto-save
+            clearTimeout(mdSaveTimeout);
+            setStatusSaving();
+            mdSaveTimeout = setTimeout(() => saveDocument(), 800);
 
-        // Send via WebSocket
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            const html = marked.parse(mdInput.value);
-            ws.send(JSON.stringify({
-                type: 'edit',
-                content: html,
-            }));
-            sendTypingIndicator();
-        }
-    });
+            // Send via WebSocket
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const html = marked.parse(mdInput.value);
+                ws.send(JSON.stringify({
+                    type: 'edit',
+                    content: html,
+                }));
+                sendTypingIndicator();
+            }
+        });
+    }
 
     // Markdown toolbar buttons
     document.getElementById('md-btn-bold')?.addEventListener('click', () => mdInsert('**', '**'));
@@ -1392,11 +1781,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('md-btn-heading')?.addEventListener('click', () => mdInsert('## ', ''));
 
     // ── HUD Backend Monitor ──
-    document.getElementById('btn-toggle-hud').addEventListener('click', () => HUD.toggle());
-    document.getElementById('btn-close-hud').addEventListener('click', () => HUD.close());
-    document.getElementById('btn-collapse-hud').addEventListener('click', () => HUD.toggleCollapse());
-    document.getElementById('btn-pin-hud').addEventListener('click', () => HUD.togglePin());
-    document.getElementById('hud-clear-log').addEventListener('click', () => HUD.clearLog());
+    document.getElementById('btn-toggle-hud')?.addEventListener('click', () => HUD.toggle());
+    document.getElementById('btn-close-hud')?.addEventListener('click', () => HUD.close());
+    document.getElementById('btn-collapse-hud')?.addEventListener('click', () => HUD.toggleCollapse());
+    document.getElementById('btn-pin-hud')?.addEventListener('click', () => HUD.togglePin());
+    document.getElementById('hud-clear-log')?.addEventListener('click', () => HUD.clearLog());
 
     // Make HUD Draggable
     setupHUDDragging();
