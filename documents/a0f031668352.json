@@ -1,0 +1,21 @@
+{
+  "id": "a0f031668352",
+  "title": "Untitled Document",
+  "content": "",
+  "created_at": "2026-06-05T11:37:34.757853Z",
+  "updated_at": "2026-06-05T11:37:34.757853Z",
+  "tags": [],
+  "pinned": false,
+  "is_draft": false,
+  "draft_of": null,
+  "versions": [
+    {
+      "version_id": "16f3299bab37",
+      "content": "",
+      "title": "Untitled Document",
+      "timestamp": "2026-06-05T11:37:34.758253Z",
+      "summary": "Initial creation"
+    }
+  ],
+  "max_versions": 50
+}

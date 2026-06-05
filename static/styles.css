@@ -1285,11 +1285,15 @@ input, select, textarea {
   width: 380px;
   background: var(--bg-secondary);
   border-left: 1px solid var(--border-color);
-  display: flex;
+  display: none; /* Hidden by default to prevent showing on load */
   flex-direction: column;
   box-shadow: var(--shadow-lg);
   z-index: 20;
   animation: slideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ai-panel.active, .side-panel.active {
+  display: flex !important;
 }
 
 @keyframes slideIn {
@@ -1567,6 +1571,10 @@ input, select, textarea {
   backdrop-filter: blur(4px);
   z-index: 100;
   display: none;
+}
+
+.modal-overlay.active, .panel-overlay.active {
+  display: block !important;
 }
 
 .modal {
