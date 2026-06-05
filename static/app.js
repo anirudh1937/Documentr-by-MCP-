@@ -1602,6 +1602,11 @@ function loadAIConfig() {
     if (stored) {
         try {
             aiConfig = { ...aiConfig, ...JSON.parse(stored) };
+            // Auto-migrate deprecated 1.5 model to 3.5 model
+            if (aiConfig.model === 'gemini-1.5-flash') {
+                aiConfig.model = 'gemini-3.5-flash';
+                localStorage.setItem('mcp-ai-config', JSON.stringify(aiConfig));
+            }
         } catch (e) {
             console.error('Failed to parse stored AI config', e);
         }
