@@ -1761,12 +1761,6 @@ async function sendAIChatMessage() {
     inputEl.value = '';
     appendAIBubble('user', query);
     
-    // Check if configuration has been configured
-    if (!aiConfig.key && aiConfig.provider !== 'ollama') {
-        appendAIBubble('assistant', '⚠️ Please configure your API Key first by clicking the settings ⚙️ icon at the top of this panel.');
-        return;
-    }
-    
     const scope = document.querySelector('input[name="ai-scope"]:checked')?.value || 'document';
     
     showAILoading();
@@ -1821,14 +1815,6 @@ async function runAIQuickAction(action) {
         return;
     }
     
-    if (!aiConfig.key && aiConfig.provider !== 'ollama') {
-        appendAIBubble('assistant', '⚠️ Please configure your API Key first by clicking the settings ⚙️ icon.');
-        toggleAIPanel(); // ensure open
-        const settingsContainer = document.getElementById('ai-settings-container');
-        if (settingsContainer) settingsContainer.style.display = 'flex';
-        return;
-    }
-
     // Toggle AI panel open to show output
     if (!isAIOpen) toggleAIPanel();
     
