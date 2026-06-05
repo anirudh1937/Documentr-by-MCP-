@@ -1548,7 +1548,7 @@ function setupHUDResizing() {
 let isAIOpen = false;
 let aiConfig = {
     provider: 'google',
-    model: 'gemini-1.5-flash',
+    model: 'gemini-3.5-flash',
     key: '',
     endpoint: 'http://localhost:11434/v1'
 };
@@ -1582,7 +1582,7 @@ function initAIAssistant() {
             if (modelInput) modelInput.value = 'llama3';
         } else {
             if (ollamaField) ollamaField.style.display = 'none';
-            if (e.target.value === 'google' && modelInput) modelInput.value = 'gemini-1.5-flash';
+            if (e.target.value === 'google' && modelInput) modelInput.value = 'gemini-3.5-flash';
             if (e.target.value === 'openai' && modelInput) modelInput.value = 'gpt-4o-mini';
             if (e.target.value === 'anthropic' && modelInput) modelInput.value = 'claude-3-5-sonnet-20240620';
         }

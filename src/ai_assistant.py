@@ -66,9 +66,9 @@ def _get_chat_model(provider: str, model: str, api_key: Optional[str] = None, en
         )
     elif provider == "google":
         from langchain_google_genai import ChatGoogleGenerativeAI
-        # Google model name might be gemini-1.5-pro, gemini-1.5-flash, etc.
+        # Google model name might be gemini-3.5-flash, gemini-2.0-flash, etc.
         return ChatGoogleGenerativeAI(
-            model=model or "gemini-1.5-flash",
+            model=model or "gemini-3.5-flash",
             google_api_key=api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"),
             temperature=0.7,
         )

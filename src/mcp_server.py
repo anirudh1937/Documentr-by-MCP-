@@ -481,7 +481,7 @@ async def ai_query_document(
     doc_id: str,
     query: str,
     provider: str = "google",
-    model: str = "gemini-1.5-flash",
+    model: str = "gemini-3.5-flash",
 ) -> str:
     """
     Ask the AI Assistant a question about a specific document's content.
@@ -523,7 +523,7 @@ async def ai_query_document(
 async def ai_summarize_document(
     doc_id: str,
     provider: str = "google",
-    model: str = "gemini-1.5-flash",
+    model: str = "gemini-3.5-flash",
 ) -> str:
     """
     Summarize a document's content using the LangChain AI Assistant.
