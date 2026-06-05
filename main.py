@@ -51,12 +51,12 @@ load_env()
 VERSION = "1.0.0"
 
 BANNER = rf"""
-  ╔═══════════════════════════════════════════════╗
-  ║     📝  MCP Document Editor  v{VERSION}         ║
-  ║                                               ║
-  ║  Tools: create, read, update, delete, search  ║
-  ║  Features: versioning, export, real-time sync ║
-  ╚═══════════════════════════════════════════════╝
+  +-----------------------------------------------+
+  |        MCP Document Editor  v{VERSION}         |
+  |                                               |
+  |  Tools: create, read, update, delete, search  |
+  |  Features: versioning, export, real-time sync |
+  +-----------------------------------------------+
 """
 
 
