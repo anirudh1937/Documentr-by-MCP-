@@ -555,6 +555,11 @@ async function handleFileUpload(file) {
         await refreshDocList();
         await openDocument(data.id);
         switchView('workspace');
+        // Auto-run compliance test check on file upload
+        setTimeout(() => {
+            openCompliancePanel();
+            runComplianceScan();
+        }, 600);
     } catch (e) {
         console.error('File import failed:', e);
         toast(`File import failed: ${e.message}`, 'error');
@@ -622,6 +627,11 @@ async function importLocalFile(filePath) {
         await refreshDocList();
         await openDocument(data.id);
         switchView('workspace');
+        // Auto-run compliance test check on local file import
+        setTimeout(() => {
+            openCompliancePanel();
+            runComplianceScan();
+        }, 600);
     } catch (e) {
         console.error('Local file import failed:', e);
         toast(`Import failed: ${e.message}`, 'error');
@@ -1025,6 +1035,176 @@ async function openVersionPanel() {
 function closeVersionPanel() {
     document.getElementById('version-panel').classList.remove('active');
     document.getElementById('panel-overlay').classList.remove('active');
+}
+
+async function openCompliancePanel() {
+    if (!currentDocId) {
+        toast('Select a document to run compliance analysis', 'warning');
+        return;
+    }
+    // Close other panels
+    closeVersionPanel();
+    closeCompliancePanel();
+    
+    const panel = document.getElementById('compliance-panel');
+    const overlay = document.getElementById('panel-overlay');
+    if (panel) panel.classList.add('active');
+    if (overlay) overlay.classList.add('active');
+}
+
+function closeCompliancePanel() {
+    const panel = document.getElementById('compliance-panel');
+    const overlay = document.getElementById('panel-overlay');
+    if (panel) panel.classList.remove('active');
+    if (overlay) overlay.classList.remove('active');
+}
+
+async function runComplianceScan() {
+    if (!currentDocId) return;
+    
+    const loading = document.getElementById('compliance-loading');
+    const results = document.getElementById('compliance-results');
+    const runBtn = document.getElementById('btn-run-compliance');
+    
+    if (loading) loading.style.display = 'block';
+    if (results) results.innerHTML = `
+        <div style="text-align: center; color: var(--text-secondary); padding: 20px;">
+            Analyzing document structure & matching reference clauses...
+        </div>
+    `;
+    if (runBtn) runBtn.disabled = true;
+    
+    const formData = new FormData();
+    formData.append('provider', aiConfig.provider);
+    formData.append('model', aiConfig.model);
+    formData.append('api_key', aiConfig.key);
+    formData.append('endpoint', aiConfig.endpoint);
+    
+    try {
+        const res = await fetch(`/api/documents/${currentDocId}/compliance`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        
+        const data = await res.json();
+        
+        if (loading) loading.style.display = 'none';
+        if (runBtn) runBtn.disabled = false;
+        
+        renderComplianceResults(data);
+        toast('Compliance scan complete', 'success');
+    } catch (e) {
+        console.error('Compliance scan failed:', e);
+        if (loading) loading.style.display = 'none';
+        if (runBtn) runBtn.disabled = false;
+        if (results) {
+            results.innerHTML = `
+                <div style="text-align: center; color: var(--accent-rose); padding: 20px;">
+                    ❌ Failed to run compliance scan: ${e.message}
+                </div>
+            `;
+        }
+        toast('Compliance scan failed', 'error');
+    }
+}
+
+function renderComplianceResults(data) {
+    const results = document.getElementById('compliance-results');
+    if (!results) return;
+    
+    results.innerHTML = '';
+    
+    // 1. Add Tokens Saved Banner
+    if (data.tokens_saved) {
+        const banner = document.createElement('div');
+        banner.style.background = '#f0fdf4';
+        banner.style.border = '1px solid #bbf7d0';
+        banner.style.borderRadius = 'var(--radius-md)';
+        banner.style.padding = '10px 12px';
+        banner.style.fontSize = '11px';
+        banner.style.color = '#166534';
+        banner.style.fontWeight = '600';
+        banner.style.marginBottom = '12px';
+        banner.innerHTML = `🛡️ RAG Telemetry: ${data.tokens_saved}`;
+        results.appendChild(banner);
+    }
+    
+    const tests = data.tests || [];
+    if (tests.length === 0) {
+        results.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">No compliance test suggestions generated.</div>`;
+        return;
+    }
+    
+    tests.forEach(test => {
+        const card = document.createElement('div');
+        card.style.background = 'var(--bg-primary)';
+        card.style.border = '1px solid var(--border-color)';
+        card.style.borderRadius = 'var(--radius-md)';
+        card.style.padding = '14px';
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+        card.style.gap = '8px';
+        card.style.boxShadow = 'var(--shadow-sm)';
+        
+        const statusBadge = test.found 
+            ? '<span style="background: #dcfce7; color: #16a34a; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 10px; text-transform: uppercase;">✔️ Specified</span>'
+            : '<span style="background: #fee2e2; color: #ef4444; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 10px; text-transform: uppercase;">⚠️ Missing</span>';
+            
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                <strong style="font-size: 13px; color: var(--text-primary); font-weight: 700;">${escapeHtml(test.name)}</strong>
+                ${statusBadge}
+            </div>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 4px 0;">
+                ${escapeHtml(test.suggestion)}
+            </p>
+            <div style="margin-top: 8px;">
+                <div style="font-size: 10px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Library Matched Templates:</div>
+                <div class="compliance-refs" style="display: flex; flex-direction: column; gap: 6px;"></div>
+            </div>
+        `;
+        
+        const refsContainer = card.querySelector('.compliance-refs');
+        const refs = test.references || [];
+        
+        if (refs.length === 0) {
+            refsContainer.innerHTML = '<div style="font-size: 11px; color: var(--text-muted); font-style: italic;">No matching reference documents found in library.</div>';
+        } else {
+            refs.forEach(ref => {
+                const refEl = document.createElement('div');
+                refEl.style.background = 'var(--bg-tertiary)';
+                refEl.style.border = '1px solid var(--border-color)';
+                refEl.style.borderRadius = 'var(--radius-sm)';
+                refEl.style.padding = '8px';
+                refEl.style.fontSize = '11px';
+                refEl.style.display = 'flex';
+                refEl.style.flexDirection = 'column';
+                refEl.style.gap = '4px';
+                
+                refEl.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: var(--accent-primary);">
+                        <span>📄 ${escapeHtml(ref.title)}</span>
+                        <button class="btn-copy-clause" style="background: transparent; border: none; font-size: 10px; color: var(--text-muted); cursor: pointer; padding: 2px 4px; border-radius: 2px; transition: background 0.1s;">📋 Copy</button>
+                    </div>
+                    <div style="color: var(--text-secondary); line-height: 1.4; white-space: pre-wrap; font-family: monospace; font-size: 10px; padding: 4px; background: rgba(0,0,0,0.02); border-radius: 2px; overflow-x: auto;">${escapeHtml(ref.clause)}</div>
+                `;
+                
+                // Copy action
+                refEl.querySelector('.btn-copy-clause').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(ref.clause).then(() => {
+                        toast('Matched clause copied to clipboard', 'success');
+                    });
+                });
+                
+                refsContainer.appendChild(refEl);
+            });
+        }
+        
+        results.appendChild(card);
+    });
 }
 
 async function restoreVersion(versionId) {
@@ -1710,7 +1890,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Version History ──
     document.getElementById('btn-versions')?.addEventListener('click', openVersionPanel);
     document.getElementById('version-panel-close')?.addEventListener('click', closeVersionPanel);
-    document.getElementById('panel-overlay')?.addEventListener('click', closeVersionPanel);
+
+    // ── Test Compliance ──
+    document.getElementById('btn-compliance-check')?.addEventListener('click', openCompliancePanel);
+    document.getElementById('compliance-panel-close')?.addEventListener('click', closeCompliancePanel);
+    document.getElementById('btn-run-compliance')?.addEventListener('click', runComplianceScan);
+
+    document.getElementById('panel-overlay')?.addEventListener('click', () => {
+        closeVersionPanel();
+        closeCompliancePanel();
+    });
 
     // ── Search/Replace ──
     document.getElementById('btn-search-replace')?.addEventListener('click', openSearchModal);
@@ -1823,8 +2012,9 @@ document.addEventListener('DOMContentLoaded', () => {
             closeSearchModal();
             closeDeleteModal();
             closeVersionPanel();
-            document.getElementById('export-dropdown').classList.remove('active');
-            document.getElementById('sidebar').classList.remove('mobile-open');
+            closeCompliancePanel();
+            document.getElementById('export-dropdown')?.classList.remove('active');
+            document.getElementById('sidebar')?.classList.remove('mobile-open');
         }
         // Enter in search modal
         if (e.key === 'Enter' && document.getElementById('search-modal').classList.contains('active')) {

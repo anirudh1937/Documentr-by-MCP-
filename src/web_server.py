@@ -20,7 +20,7 @@ from starlette.requests import Request
 
 from .storage import store  # shared singleton
 from .activity import tracker
-from .ai_assistant import AIChatRequest, AIActionRequest, chat_with_assistant, run_document_action
+from .ai_assistant import AIChatRequest, AIActionRequest, chat_with_assistant, run_document_action, run_compliance_analysis
 from .graph_service import build_graph
 
 logger = logging.getLogger("doc-editor.web")
@@ -635,6 +635,28 @@ async def api_dashboard_stats():
             "project": langchain_project,
         }
     }
+
+
+@app.post("/api/documents/{doc_id}/compliance")
+async def api_document_compliance(
+    doc_id: str,
+    provider: str = Form("google"),
+    model: str = Form("gemini-3.5-flash"),
+    api_key: Optional[str] = Form(None),
+    endpoint: Optional[str] = Form(None),
+):
+    try:
+        analysis = await run_compliance_analysis(
+            doc_id=doc_id,
+            provider=provider,
+            model=model,
+            api_key=api_key,
+            endpoint=endpoint
+        )
+        return analysis
+    except Exception as e:
+        logger.error(f"Compliance analysis failed: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 # ═══════════════════════════════════════════════════════════════════════
