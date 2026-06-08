@@ -52,12 +52,11 @@ mcp = FastMCP(
     ),
 )
 
-WEB_PORT = 8765
-API_BASE = f"http://localhost:{WEB_PORT}/api/documents"
+DOCUMENT_EDITOR_URL = os.getenv("DOCUMENT_EDITOR_URL", "http://localhost:8765")
 
 async def _request(method: str, endpoint: str, data: dict | None = None, params: dict | None = None, headers: dict | None = None) -> httpx.Response:
     """Helper to make HTTP requests to the Web Server API."""
-    url = f"http://localhost:{WEB_PORT}{endpoint}"
+    url = f"{DOCUMENT_EDITOR_URL.rstrip('/')}{endpoint}"
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             if method.upper() == "GET":
@@ -437,35 +436,42 @@ async def mark_plan_step_complete(step_index: int) -> str:
 @mcp.tool()
 async def open_editor(doc_id: str | None = None) -> str:
     """Launch the web-based document editor in your default browser."""
-    url = f"http://localhost:{WEB_PORT}"
+    url = DOCUMENT_EDITOR_URL.rstrip("/")
     if doc_id:
-        url += f"?doc={doc_id}"
+        url += f"/?doc={doc_id}"
 
-    # Check if server is already running before starting
-    def _start_server():
-        import socket
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(1)
-                result = s.connect_ex(("localhost", WEB_PORT))
-                if result == 0:
-                    logger.info(f"Server already running on port {WEB_PORT}")
-                    return  # Already running
-        except Exception:
-            pass
+    # Only attempt to auto-start if running locally
+    is_local = "localhost" in DOCUMENT_EDITOR_URL or "127.0.0.1" in DOCUMENT_EDITOR_URL
+    if is_local:
+        # Extract port from URL if possible
+        import urllib.parse
+        parsed = urllib.parse.urlparse(DOCUMENT_EDITOR_URL)
+        port = parsed.port or 8765
 
-        try:
-            subprocess.Popen(
-                [sys.executable, "-m", "uvicorn", "src.web_server:app",
-                 "--host", "0.0.0.0", "--port", str(WEB_PORT), "--log-level", "warning"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            logger.info(f"Started web server on port {WEB_PORT}")
-        except Exception as e:
-            logger.error(f"Failed to start web server: {e}")
+        def _start_server():
+            import socket
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.settimeout(1)
+                    result = s.connect_ex(("localhost", port))
+                    if result == 0:
+                        logger.info(f"Server already running on port {port}")
+                        return  # Already running
+            except Exception:
+                pass
 
-    threading.Thread(target=_start_server, daemon=True).start()
+            try:
+                subprocess.Popen(
+                    [sys.executable, "-m", "uvicorn", "src.web_server:app",
+                     "--host", "0.0.0.0", "--port", str(port), "--log-level", "warning"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                logger.info(f"Started web server on port {port}")
+            except Exception as e:
+                logger.error(f"Failed to start web server: {e}")
+
+        threading.Thread(target=_start_server, daemon=True).start()
 
     # Open browser
     try:
@@ -497,7 +503,7 @@ async def ai_query_document(
     elif provider == "anthropic":
         api_key = os.getenv("ANTHROPIC_API_KEY")
         
-    url = f"http://localhost:{WEB_PORT}/api/ai/chat"
+    url = f"{DOCUMENT_EDITOR_URL.rstrip('/')}/api/ai/chat"
     payload = {
         "provider": provider,
         "model": model,
@@ -548,7 +554,7 @@ async def ai_summarize_document(
     elif provider == "anthropic":
         api_key = os.getenv("ANTHROPIC_API_KEY")
         
-    url = f"http://localhost:{WEB_PORT}/api/ai/action"
+    url = f"{DOCUMENT_EDITOR_URL.rstrip('/')}/api/ai/action"
     payload = {
         "provider": provider,
         "model": model,

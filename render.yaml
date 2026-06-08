@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: documentr
+    env: docker
+    plan: free
+    numInstances: 1
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+        description: "Your Google Gemini API Key for AI Assistant features"
+      - key: ACCESS_PASSWORD
+        sync: false
+        description: "Optional password protection for the web application"
+      - key: DOCUMENT_EDITOR_URL
+        sync: false
+        description: "The public URL of this deployed web application (e.g., https://your-app.onrender.com). Used by local MCP clients."
+    disk:
+      name: documentr-documents
+      mountPath: /app/documents
+      sizeGB: 1

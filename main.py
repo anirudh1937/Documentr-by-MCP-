@@ -70,7 +70,6 @@ def run_mcp():
 def run_web(port: int = 8765):
     """Launch the FastAPI web server with Uvicorn."""
     import uvicorn
-    from src.mcp_server import WEB_PORT
 
     print(BANNER)
     logger.info(f"Starting web editor on http://localhost:{port}")
@@ -128,8 +127,8 @@ def main():
     parser.add_argument(
         "--port", "-p",
         type=int,
-        default=8765,
-        help="Port for the web server (default: 8765)",
+        default=int(os.environ.get("PORT", "8765")),
+        help="Port for the web server (default: 8765 or PORT env var)",
     )
 
     args = parser.parse_args()

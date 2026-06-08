@@ -8,6 +8,7 @@ import asyncio
 import json
 import logging
 import time
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -17,6 +18,25 @@ from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
+
+# Load environment variables from .env if present and not already loaded
+if not os.environ.get("GEMINI_API_KEY") or not os.environ.get("ACCESS_PASSWORD"):
+    _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    _env_path = os.path.join(_project_root, ".env")
+    if os.path.exists(_env_path):
+        with open(_env_path, "r", encoding="utf-8") as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if not _line or _line.startswith("#"):
+                    continue
+                if "=" in _line:
+                    _k, _v = _line.split("=", 1)
+                    _k = _k.strip()
+                    _v = _v.strip().strip('"').strip("'")
+                    if _k not in os.environ:
+                        os.environ[_k] = _v
+
+ACCESS_PASSWORD = os.getenv("ACCESS_PASSWORD")
 
 from .storage import store  # shared singleton
 from .activity import tracker
@@ -35,6 +55,17 @@ class ActivityMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
+        
+        # Enforce access password if configured
+        if ACCESS_PASSWORD and path.startswith("/api/") and path != "/api/auth/status":
+            password_header = request.headers.get("X-Access-Password")
+            password_param = request.query_params.get("password")
+            if password_header != ACCESS_PASSWORD and password_param != ACCESS_PASSWORD:
+                return JSONResponse(
+                    {"error": "Unauthorized", "auth_required": True},
+                    status_code=401
+                )
+
         start = time.time()
         try:
             response = await call_next(request)
@@ -259,6 +290,11 @@ async def dashboard_page():
 # ═══════════════════════════════════════════════════════════════════════
 #  REST API
 # ═══════════════════════════════════════════════════════════════════════
+
+
+@app.get("/api/auth/status")
+async def api_auth_status():
+    return {"required": ACCESS_PASSWORD is not None and len(ACCESS_PASSWORD) > 0}
 
 
 @app.post("/api/documents")
@@ -666,6 +702,15 @@ async def api_document_compliance(
 
 @app.websocket("/ws/{doc_id}")
 async def websocket_endpoint(ws: WebSocket, doc_id: str):
+    # Enforce password check for WebSockets if configured
+    if ACCESS_PASSWORD:
+        password = ws.query_params.get("password")
+        if password != ACCESS_PASSWORD:
+            await ws.accept()
+            await ws.send_json({"type": "auth_error", "message": "Unauthorized"})
+            await ws.close(code=4001)
+            return
+
     # Dashboard WebSocket — stream stats and active connections
     if doc_id == "dashboard":
         await ws.accept()

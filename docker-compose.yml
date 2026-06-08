@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  documentr:
+    build: .
+    container_name: documentr-editor
+    ports:
+      - "8765:8765"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - ACCESS_PASSWORD=${ACCESS_PASSWORD}
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT}
+    volumes:
+      - ./documents:/app/documents
+      - ./agent_state:/app/agent_state
+    restart: unless-stopped

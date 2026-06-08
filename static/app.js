@@ -697,7 +697,8 @@ function connectWebSocket(docId) {
     disconnectWebSocket();
 
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${location.host}/ws/${docId}`;
+    const savedPassword = localStorage.getItem('documentr_access_password') || '';
+    const wsUrl = `${protocol}//${location.host}/ws/${docId}?password=${encodeURIComponent(savedPassword)}`;
 
     ws = new WebSocket(wsUrl);
 
@@ -777,8 +778,16 @@ function connectWebSocket(docId) {
         }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
         setStatusDisconnected();
+        if (event.code === 4001) {
+            localStorage.removeItem('documentr_access_password');
+            toast('Unauthorized: Invalid access password', 'error');
+            window.promptForPassword(true).then(() => {
+                connectWebSocket(docId);
+            });
+            return;
+        }
         // Auto-reconnect after 3 seconds
         setTimeout(() => {
             if (currentDocId === docId) {
@@ -1365,7 +1374,8 @@ const HUD = {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) return;
 
         const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${location.host}/ws/dashboard`;
+        const savedPassword = localStorage.getItem('documentr_access_password') || '';
+        const wsUrl = `${protocol}//${location.host}/ws/dashboard?password=${encodeURIComponent(savedPassword)}`;
 
         try {
             this.ws = new WebSocket(wsUrl);
@@ -1392,9 +1402,17 @@ const HUD = {
             } catch (e) { /* ignore */ }
         };
 
-        this.ws.onclose = () => {
+        this.ws.onclose = (event) => {
             const liveDot = document.querySelector('.hud-live-dot');
             if (liveDot) liveDot.style.background = 'var(--accent-rose)';
+
+            if (event.code === 4001) {
+                localStorage.removeItem('documentr_access_password');
+                window.promptForPassword(true).then(() => {
+                    this.connect();
+                });
+                return;
+            }
 
             // Auto-reconnect if still open
             if (this.isOpen) {

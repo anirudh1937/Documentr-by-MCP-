@@ -65,7 +65,8 @@ async def run_mcp_test():
                         "doc_id": doc_id,
                         "content": "<h1>Hello from the AI!</h1><p>I just created this document using the MCP protocol.</p><br><p><strong>Update:</strong> I have now edited this document live! Did you see it update on the screen?</p>",
                         "title": "AI Test Document (Updated)",
-                        "summary": "Added a new paragraph to test live updates"
+                        "change_summary": "Added a new paragraph to test live updates",
+                        "intent": "Testing dynamic update via client script"
                     }
                 )
                 

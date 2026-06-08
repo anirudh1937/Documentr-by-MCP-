@@ -25,7 +25,8 @@ const MAX_RECONNECT_DELAY = 30000; // 30s cap
 
 function connectDashboard() {
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${location.host}/ws/dashboard`;
+    const savedPassword = localStorage.getItem('documentr_access_password') || '';
+    const wsUrl = `${protocol}//${location.host}/ws/dashboard?password=${encodeURIComponent(savedPassword)}`;
 
     try {
         dashWs = new WebSocket(wsUrl);
@@ -57,8 +58,15 @@ function connectDashboard() {
         }
     };
 
-    dashWs.onclose = () => {
+    dashWs.onclose = (event) => {
         setDashboardConnected(false);
+        if (event.code === 4001) {
+            localStorage.removeItem('documentr_access_password');
+            window.promptForPassword(true).then(() => {
+                connectDashboard();
+            });
+            return;
+        }
         scheduleReconnect();
     };
 
